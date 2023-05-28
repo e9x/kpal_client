@@ -43,7 +43,7 @@ export default class Tools {
   death: { el: null; count: number };
   hosting: { obs: null };
   header: { html: () => string };
-  features: Record<string, Feature>;
+  public features: Record<string, Feature>;
   constructor() {
     this.watermark = {
       el: null,
@@ -445,7 +445,11 @@ export default class Tools {
     };
   }
 
-  private triggerEvent(key: string, val: any, store = true) {
+  public openFolder() {
+    return ipcRenderer.invoke("open-folder") as Promise<string[]>;
+  }
+
+  public triggerEvent(key: string, val: any, store = true) {
     val = val == undefined ? null : val;
     if (val != null && store) config.set(`tools_${key}`, val);
     if (Object.keys(this.features).includes(key)) {
@@ -539,16 +543,25 @@ export default class Tools {
       });
   }
 
-  sendStatus(elName: string, msg = " ", status = "neutral", timeout = null) {
+  private sendStatus(
+    elName: string,
+    msg = " ",
+    status = "neutral",
+    timeout = null
+  ) {
     ipcRenderer.send("sendStatus", elName, msg, status, timeout);
   }
 
-  resetSearchMatchMsg() {
+  private resetSearchMatchMsg() {
     //Use document in case menu hasnt loaded on initial start => will return null
     ipcRenderer.send("resetSearchMatchMsg");
   }
 
-  observe(el: HTMLElement, attr: string, callback: (el: HTMLElement) => void) {
+  private observe(
+    el: HTMLElement,
+    attr: string,
+    callback: (el: HTMLElement) => void
+  ) {
     const options =
       attr == "childList"
         ? { childList: true }
@@ -558,7 +571,7 @@ export default class Tools {
     }).observe(el, options);
   }
 
-  drawWatermark() {
+  private drawWatermark() {
     const el = document.createElement("div");
     el.innerText = "Krunker Client v" + info.version;
     el.style.cssText = `
@@ -576,19 +589,19 @@ export default class Tools {
     document.body.appendChild(el);
   }
 
-  drawKillCounter() {
+  private drawKillCounter() {
     killsIcon.src = pathToFileURL(
       join(__dirname, "../img/kill.png")
     ).toString();
   }
 
-  drawDeathCounter() {
+  private drawDeathCounter() {
     deathsIcon.src = pathToFileURL(
       join(__dirname, "../img/death.png")
     ).toString();
   }
 
-  genObservers() {
+  private genObservers() {
     //Discord RPC
     this.observe(inGameUI, "style", (e: HTMLElement) => {
       if (e.style.display == "block") {
@@ -635,7 +648,7 @@ export default class Tools {
       }
     });
   }
-  preload() {
+  public preload() {
     this.drawWatermark();
     this.drawKillCounter();
     this.drawDeathCounter();
@@ -645,7 +658,7 @@ export default class Tools {
     this.genObservers();
   }
 
-  menu() {
+  public menu() {
     this.listenServerURL();
 
     return [

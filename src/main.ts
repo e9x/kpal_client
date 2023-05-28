@@ -4,7 +4,7 @@ import { cpus } from "os";
 import { join } from "path";
 import { pathToFileURL } from "url";
 import DiscordRPC from "discord-rpc";
-import { app, BrowserWindow, ipcMain, Menu, shell } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from "electron";
 import type { Event } from "electron";
 import localshortcut from "electron-localshortcut";
 import Store from "electron-store";
@@ -280,6 +280,14 @@ class ClientSession {
     ipcMain.on("restart", () => {
       app.relaunch();
       app.quit();
+    });
+
+    ipcMain.on("open-folder", async () => {
+      return (
+        await dialog.showOpenDialog(this.menuWindow!, {
+          properties: ["openDirectory"],
+        })
+      ).filePaths;
     });
 
     ipcMain.on("join-game", (event, url: string) => {
