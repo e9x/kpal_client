@@ -9,7 +9,7 @@ import type { Event } from "electron";
 import localshortcut from "electron-localshortcut";
 import Store from "electron-store";
 import { autoUpdater } from "electron-updater";
-import { gameURL } from "./regex.js";
+import { editorURL, gameURL, socialURL, viewerURL } from "./regex.js";
 
 const clientId = "566623836628582412";
 DiscordRPC.register(clientId);
@@ -36,7 +36,6 @@ class ClientSession {
     this.menuWindow = null;
 
     this.setAppSwitches();
-    this.initDiscordRPC();
 
     app.on("ready", () => this.initSplashWindow());
     app.on("activate", () => {
@@ -55,8 +54,8 @@ class ClientSession {
   start() {
     this.initGameWindow();
     this.initMenuWindow();
-
     this.initKeybinds();
+    this.initDiscordRPC();
   }
 
   setAppSwitches() {
@@ -425,6 +424,38 @@ class ClientSession {
       return className.replace(/\s/g, "_").toLowerCase();
     };
 
+    this.gameWindow?.webContents.addListener("did-navigate", (event, input) => {
+      time.setTime(Date.now());
+
+      if (gameURL.exec(input))
+        rpc.setActivity({
+          state: "Idle",
+          largeImageKey: "logo",
+          startTimestamp: time,
+        });
+
+      if (socialURL.exec(input))
+        rpc.setActivity({
+          state: "Social",
+          largeImageKey: "logo",
+          startTimestamp: time,
+        });
+
+      if (editorURL.exec(input))
+        rpc.setActivity({
+          state: "Editor",
+          largeImageKey: "logo",
+          startTimestamp: time,
+        });
+
+      if (viewerURL.exec(input))
+        rpc.setActivity({
+          state: "Viewer",
+          largeImageKey: "logo",
+          startTimestamp: time,
+        });
+    });
+
     ipcMain.on("game-info", (event, text) => {
       const info = JSON.parse(text);
       time.setTime(Date.now() + getSeconds(info.time) * 1000);
@@ -440,38 +471,7 @@ class ClientSession {
         joinSecret: this.gameWindow?.webContents.getURL(),
       });
     });
-    ipcMain.on("idle", () => {
-      time.setTime(Date.now());
-      rpc.setActivity({
-        state: "Idle",
-        largeImageKey: "logo",
-        startTimestamp: time,
-      });
-    });
-    ipcMain.on("social", () => {
-      time.setTime(Date.now());
-      rpc.setActivity({
-        state: "Social",
-        largeImageKey: "logo",
-        startTimestamp: time,
-      });
-    });
-    ipcMain.on("editor", () => {
-      time.setTime(Date.now());
-      rpc.setActivity({
-        state: "Editor",
-        largeImageKey: "logo",
-        startTimestamp: time,
-      });
-    });
-    ipcMain.on("viewer", () => {
-      time.setTime(Date.now());
-      rpc.setActivity({
-        state: "Viewer",
-        largeImageKey: "logo",
-        startTimestamp: time,
-      });
-    });
+
     rpc.on("ready", () => {
       rpc.on("RPC_MESSAGE_RECEIVED", (event) => {
         console.log(event);
