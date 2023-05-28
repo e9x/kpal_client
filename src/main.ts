@@ -282,7 +282,7 @@ class ClientSession {
       app.quit();
     });
 
-    ipcMain.on("open-folder", async () => {
+    ipcMain.handle("open-folder", async () => {
       return (
         await dialog.showOpenDialog(this.menuWindow!, {
           properties: ["openDirectory"],
