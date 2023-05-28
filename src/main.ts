@@ -406,8 +406,9 @@ class ClientSession {
     autoUpdater.on("update-downloaded", () => {
       autoUpdater.quitAndInstall();
     });
-    autoUpdater.on("error", (error) => {
-      this.splashWindow?.webContents.send("error", error.toString());
+    autoUpdater.on("error", (err) => {
+      this.splashWindow?.webContents.send("error");
+      dialog.showErrorBox("Download Failed", err.toString());
       // start later
       setTimeout(() => this.start(), 5e3);
     });

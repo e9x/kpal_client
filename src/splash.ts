@@ -21,10 +21,9 @@ ipcRenderer.on("update-not-available", () => {
   updateStatus.innerHTML = `Loading...`;
   updateStatus.style.color = "#ffd542";
 });
-ipcRenderer.on("error", (event, text) => {
+ipcRenderer.on("error", () => {
   updateStatus.innerHTML = "Download Failed";
   updateStatus.style.color = "#eb5656";
-  alert(text);
 });
 
 window.addEventListener("DOMContentLoaded", () => {
