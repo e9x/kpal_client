@@ -319,6 +319,8 @@ class ClientSession {
     });
     autoUpdater.on("error", (error) => {
       this.splashWindow?.webContents.send("error", error.toString());
+      // start later
+      setTimeout(() => this.start(), 5e3);
     });
     autoUpdater.checkForUpdates();
   }
