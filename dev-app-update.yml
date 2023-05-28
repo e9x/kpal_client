@@ -1,0 +1,4 @@
+owner: e9x
+repo: kpal-client
+provider: github
+updaterCacheDirName: kpal_client-updater
