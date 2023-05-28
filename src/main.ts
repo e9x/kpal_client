@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/ban-ts-comment */
 import { readdirSync, statSync } from "fs";
 import { cpus } from "os";
 import { join } from "path";
@@ -16,6 +16,8 @@ DiscordRPC.register(clientId);
 const rpc = new DiscordRPC.Client({ transport: "ipc" });
 const time = new Date();
 
+// Store.initRenderer()
+// new Store() allows use in renderer
 const config = new Store();
 const DEBUG = process.argv.includes("--dev") || false;
 const AMD_CPU = cpus()
@@ -93,6 +95,7 @@ class ClientSession {
       movable: false,
       show: false,
       webPreferences: {
+        enableRemoteModule: false,
         preload: join(__dirname, "splash.js"),
       },
     });
@@ -119,7 +122,7 @@ class ClientSession {
       show: false,
       webPreferences: {
         webSecurity: false,
-        nodeIntegration: false,
+        enableRemoteModule: false,
         preload: join(__dirname, "preload.js"),
       },
     });
@@ -255,6 +258,7 @@ class ClientSession {
       show: false,
       parent: this.gameWindow!,
       webPreferences: {
+        enableRemoteModule: false,
         preload: join(__dirname, "menu.js"),
       },
     });
@@ -271,6 +275,83 @@ class ClientSession {
     });
     this.menuWindow.on("closed", () => {
       this.menuWindow = null;
+    });
+
+    ipcMain.on("restart", () => {
+      app.relaunch();
+      app.quit();
+    });
+
+    ipcMain.on("join-game", (event, url: string) => {
+      this.gameWindow?.loadURL(url, {
+        extraHeaders: "pragma: no-cache\n",
+      });
+    });
+
+    ipcMain.on("visit-beta", () => {
+      this.gameWindow?.loadURL("https://beta.krunker.io", {
+        extraHeaders: "pragma: no-cache\n",
+      });
+    });
+
+    ipcMain.on("resetSearchMatchMsg", () => {
+      this.menuWindow?.webContents.executeJavaScript(
+        'document.getElementById("searchMatchStatus").innerText = " ";'
+      );
+    });
+
+    ipcMain.on("gameWindowKey", (event, key: string, val: any) => {
+      this.gameWindow?.webContents.executeJavaScript(
+        `window.tools.features[${JSON.stringify(key)}].value = ${JSON.stringify(
+          val
+        )}`
+      );
+    });
+
+    ipcMain.on("gameWindowKeyPreload", (event, key: string, val: any) => {
+      this.gameWindow?.webContents.executeJavaScript(
+        `window.tools.features[${JSON.stringify(key)}].preload(${JSON.stringify(
+          val
+        )})`
+      );
+    });
+
+    ipcMain.on(
+      "sendStatus",
+      (
+        event,
+        elName: string,
+        msg = " ",
+        status = "neutral",
+        timeout = null
+      ) => {
+        this.menuWindow?.webContents
+          .executeJavaScript(
+            `${elName}.style.color = "${
+              status == "good"
+                ? "green"
+                : status == "neutral"
+                ? "orange"
+                : "red"
+            }";` + `${elName}.innerText = "${msg}";`
+          )
+          .then(() => {
+            if (timeout)
+              setInterval(
+                () =>
+                  this.menuWindow?.webContents.executeJavaScript(
+                    `${elName}.innerText = " ";`
+                  ),
+                timeout
+              );
+          });
+      }
+    );
+
+    this.gameWindow?.webContents.on("did-navigate-in-page", (event, url) => {
+      if (gameURL.exec(url) && url.includes("?")) {
+        this.menuWindow?.webContents.send("server-url", url);
+      }
     });
   }
 

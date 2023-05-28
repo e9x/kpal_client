@@ -7,7 +7,7 @@ declare global {
   var tools: Tools;
 }
 
-window.tools = new Tools("preload");
+window.tools = new Tools();
 
 const changePlayerListHotKey = () =>
   localStorage.setItem("cont_listKey", "113");

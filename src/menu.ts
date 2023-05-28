@@ -8,7 +8,7 @@ declare global {
   var tools: Tools;
 }
 
-window.tools = new Tools("menu");
+window.tools = new Tools();
 
 window.addEventListener("DOMContentLoaded", () => {
   const html = window.tools.menu();

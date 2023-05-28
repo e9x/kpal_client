@@ -2,8 +2,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import { pathToFileURL } from "url";
-import type { BrowserWindow } from "electron";
-import { ipcRenderer, remote } from "electron";
+import { ipcRenderer } from "electron";
 import Store from "electron-store";
 import { gameURL } from "./regex.js";
 
@@ -26,10 +25,8 @@ declare let endTimer: HTMLDivElement;
 declare let instructions: HTMLDivElement;
 declare let killsIcon: HTMLImageElement;
 declare let deathsIcon: HTMLImageElement;
-const config = new Store();
 
-let gameWindow: BrowserWindow;
-let menuWindow: BrowserWindow;
+const config = new Store();
 
 interface Feature {
   name?: string;
@@ -47,15 +44,7 @@ export default class Tools {
   hosting: { obs: null };
   header: { html: () => string };
   features: Record<string, Feature>;
-  constructor(src: string) {
-    if (src == "menu") {
-      menuWindow = remote.getCurrentWindow();
-      gameWindow = menuWindow.getParentWindow();
-    } else {
-      gameWindow = remote.getCurrentWindow();
-      menuWindow = gameWindow.getChildWindows()[0];
-    }
-
+  constructor() {
     this.watermark = {
       el: null,
     };
@@ -113,15 +102,10 @@ export default class Tools {
 						</div>`;
         },
         menu: (v) => {
-          if (v) {
-            if (v.match(gameURL)) {
-              gameWindow.loadURL(v, { extraHeaders: "pragma: no-cache\n" });
-            }
-          } else {
-            gameWindow.loadURL("https://krunker.io", {
-              extraHeaders: "pragma: no-cache\n",
-            });
-          }
+          ipcRenderer.send(
+            "join-game",
+            v && v.match(gameURL) ? v : "https://krunker.io"
+          );
         },
       },
       betaLink: {
@@ -134,9 +118,7 @@ export default class Tools {
 						</div>`;
         },
         menu: () => {
-          gameWindow.loadURL("https://beta.krunker.io", {
-            extraHeaders: "pragma: no-cache\n",
-          });
+          ipcRenderer.send("visit-beta");
         },
       },
       vsync: {
@@ -230,14 +212,12 @@ export default class Tools {
               ) {
                 config.clear();
                 alert("Settings Cleared! Client will now restart");
-                remote.app.relaunch();
-                remote.app.quit();
+                ipcRenderer.send("restart");
               }
               break;
             case "reboot":
               alert("Client will now restart");
-              remote.app.relaunch();
-              remote.app.quit();
+              ipcRenderer.send("restart");
               break;
           }
         },
@@ -471,19 +451,12 @@ export default class Tools {
     if (Object.keys(this.features).includes(key)) {
       if (val != null && this.features[key].value != undefined) {
         this.features[key].value = val;
-        gameWindow.webContents.executeJavaScript(
-          `window.tools.features.${key}.value = JSON.parse('${JSON.stringify(
-            val
-          )}')`
-        );
+
+        ipcRenderer.send("gameWindowKey", key, val);
       }
       if (this.features[key].menu) this.features[key].menu!(val);
       if (this.features[key].preload)
-        gameWindow.webContents.executeJavaScript(
-          `window.tools.features.${key}.preload(JSON.parse('${JSON.stringify(
-            val
-          )}'))`
-        );
+        ipcRenderer.send("gameWindowKeyPreload", key, val);
     }
   }
 
@@ -498,10 +471,8 @@ export default class Tools {
   }
 
   private listenServerURL() {
-    gameWindow.webContents.on("did-navigate-in-page", (event, url) => {
-      if (gameURL.exec(url) && url.includes("?")) {
-        serverURL.innerText = url;
-      }
+    ipcRenderer.on("server-url", (event, url: string) => {
+      serverURL.innerText = url;
     });
   }
 
@@ -569,28 +540,12 @@ export default class Tools {
   }
 
   sendStatus(elName: string, msg = " ", status = "neutral", timeout = null) {
-    menuWindow.webContents
-      .executeJavaScript(
-        `${elName}.style.color = "${
-          status == "good" ? "green" : status == "neutral" ? "orange" : "red"
-        }";` + `${elName}.innerText = "${msg}";`
-      )
-      .then(() => {
-        if (timeout) {
-          setInterval(() => {
-            menuWindow.webContents.executeJavaScript(
-              `${elName}.innerText = " ";`
-            );
-          }, timeout);
-        }
-      });
+    ipcRenderer.send("sendStatus", elName, msg, status, timeout);
   }
 
   resetSearchMatchMsg() {
     //Use document in case menu hasnt loaded on initial start => will return null
-    menuWindow.webContents.executeJavaScript(
-      'document.getElementById("searchMatchStatus").innerText = " ";'
-    );
+    ipcRenderer.send("resetSearchMatchMsg");
   }
 
   observe(el: HTMLElement, attr: string, callback: (el: HTMLElement) => void) {
