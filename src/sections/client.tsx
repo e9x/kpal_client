@@ -9,7 +9,7 @@ export default function ClientSection() {
   return (
     <Set title="Client">
       <Switch
-        title="VSync"
+        title="Frame Rate Limit"
         defaultChecked={config.get("tools_vsync")}
         attention
         description="Requires restart"
