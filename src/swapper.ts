@@ -10,18 +10,12 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 export function initSwapper() {
-  protocol.registerFileProtocol(
-    "swapper",
-    (request, callback) => {
-      const url = new URL(request.url);
-      callback({
-        path: fileURLToPath(url.toString().replace(url.protocol, "file:")),
-      });
-    },
-    (err) => {
-      if (err) console.error("Failed to register protocol");
-    }
-  );
+  protocol.registerFileProtocol("swapper", (request, callback) => {
+    const url = new URL(request.url);
+    callback({
+      path: fileURLToPath(url.toString().replace(url.protocol, "file:")),
+    });
+  });
 }
 
 export function addSwapper(window: BrowserWindow) {
