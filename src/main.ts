@@ -432,7 +432,7 @@ function initKeybinds() {
   if (!gameWindow) return;
 
   localshortcut.register(gameWindow, "Esc", () => {
-    gameWindow?.webContents.executeJavaScript("document.exitPointerLock();");
+    gameWindow?.webContents.send("exit-pointer-lock");
   });
 
   // Find match according to filters

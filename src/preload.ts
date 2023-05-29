@@ -22,3 +22,7 @@ function getGameActivitySafe() {
 setInterval(() => {
   ipcRenderer.send("game-activity", getGameActivitySafe());
 }, 2000);
+
+ipcRenderer.on("exit-pointer-lock", () => {
+  document.exitPointerLock();
+});
