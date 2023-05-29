@@ -519,14 +519,6 @@ function initDiscordRPC() {
   });
 
   rpc.on("ready", () => {
-    rpc.on("RPC_MESSAGE_RECEIVED", (event) => {
-      console.log(event);
-    });
-
-    rpc.subscribe("ACTIVITY_JOIN_REQUEST", () => {
-      console.log("user");
-    });
-
     rpc.subscribe("ACTIVITY_JOIN", ({ secret }: { secret: string }) => {
       gameWindow?.loadURL(secret);
     });
