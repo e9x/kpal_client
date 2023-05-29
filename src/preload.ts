@@ -1,4 +1,5 @@
 import "./tools.js";
+import { ipcRenderer } from "electron";
 import config from "./config.js";
 import { drawKPalTheme } from "./kpalTheme.js";
 import { editorURL, gameURL, viewerURL } from "./regex.js";
@@ -21,3 +22,15 @@ document.addEventListener("DOMContentLoaded", () => {
     fixMenuIcons();
   }
 });
+
+function getGameActivitySafe() {
+  try {
+    return getGameActivity();
+  } catch (err) {
+    //
+  }
+}
+
+setInterval(() => {
+  ipcRenderer.send("game-activity", getGameActivitySafe());
+}, 2000);

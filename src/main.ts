@@ -52,6 +52,8 @@ if (config.get("tools_d3d9")) {
 let splashWindow: BrowserWindow | null = null;
 let gameWindow: BrowserWindow | null = null;
 let socialWindow: BrowserWindow | null = null;
+let editorWindow: BrowserWindow | null = null;
+let viewerWindow: BrowserWindow | null = null;
 
 app.on("ready", () => {
   initSwapper();
@@ -108,10 +110,20 @@ function initSplashWindow() {
 
 function listenNav(window: BrowserWindow) {
   function nav(event: Event, url: string, newWindow: boolean) {
-    if (socialURL.test(url) || editorURL.test(url) || viewerURL.test(url)) {
+    if (socialURL.test(url)) {
       if (window !== socialWindow || newWindow) {
         event.preventDefault();
         initSocialWindow(url);
+      }
+    } else if (editorURL.test(url)) {
+      if (window !== editorWindow || newWindow) {
+        event.preventDefault();
+        initEditorWindow(url);
+      }
+    } else if (viewerURL.test(url)) {
+      if (window !== viewerWindow || newWindow) {
+        event.preventDefault();
+        initViewerWindow(url);
       }
     } else if (gameURL.test(url)) {
       if (window !== gameWindow || newWindow) {
@@ -148,6 +160,14 @@ function initGameWindow(url: string) {
 
   gameWindow.setMenu(null);
   gameWindow.loadURL(url);
+
+  gameWindow.addListener("focus", () => {
+    rpc.setActivity({
+      state: "Idle",
+      largeImageKey: "logo",
+      startTimestamp: new Date(),
+    });
+  });
 
   gameWindow.once("ready-to-show", () => {
     splashWindow?.close();
@@ -283,6 +303,14 @@ function initSocialWindow(url: string) {
   socialWindow.setMenu(null);
   socialWindow.loadURL(url);
 
+  socialWindow.addListener("focus", () => {
+    rpc.setActivity({
+      state: "Social",
+      largeImageKey: "logo",
+      startTimestamp: new Date(),
+    });
+  });
+
   socialWindow.once("ready-to-show", () => {
     socialWindow?.show();
     if (DEBUG)
@@ -296,6 +324,86 @@ function initSocialWindow(url: string) {
   });
 
   listenNav(socialWindow);
+}
+
+function initEditorWindow(url: string) {
+  if (editorWindow) return editorWindow.loadURL(url);
+
+  editorWindow = new BrowserWindow({
+    width: 1280,
+    height: 720,
+    show: false,
+    webPreferences: {
+      enableRemoteModule: false,
+      webSecurity: false,
+      preload: join(__dirname, "preload.js"),
+    },
+  });
+
+  editorWindow.setMenu(null);
+  editorWindow.loadURL(url);
+
+  editorWindow.addListener("focus", () => {
+    rpc.setActivity({
+      state: "Editor",
+      largeImageKey: "logo",
+      startTimestamp: new Date(),
+    });
+  });
+
+  editorWindow.once("ready-to-show", () => {
+    editorWindow?.show();
+    if (DEBUG)
+      editorWindow?.webContents.openDevTools({
+        mode: "undocked",
+      });
+  });
+
+  editorWindow.on("closed", () => {
+    socialWindow = null;
+  });
+
+  listenNav(editorWindow);
+}
+
+function initViewerWindow(url: string) {
+  if (viewerWindow) return viewerWindow.loadURL(url);
+
+  viewerWindow = new BrowserWindow({
+    width: 1280,
+    height: 720,
+    show: false,
+    webPreferences: {
+      enableRemoteModule: false,
+      webSecurity: false,
+      preload: join(__dirname, "preload.js"),
+    },
+  });
+
+  viewerWindow.setMenu(null);
+  viewerWindow.loadURL(url);
+
+  viewerWindow.addListener("focus", () => {
+    rpc.setActivity({
+      state: "Viewer",
+      largeImageKey: "logo",
+      startTimestamp: new Date(),
+    });
+  });
+
+  viewerWindow.once("ready-to-show", () => {
+    viewerWindow?.show();
+    if (DEBUG)
+      editorWindow?.webContents.openDevTools({
+        mode: "undocked",
+      });
+  });
+
+  viewerWindow.on("closed", () => {
+    viewerWindow = null;
+  });
+
+  listenNav(viewerWindow);
 }
 
 async function gameSearchMatch() {
@@ -368,60 +476,45 @@ function checkForUpdates() {
 }
 
 function initDiscordRPC() {
-  const getSeconds = (timeText: string) => {
-    const tokens = timeText.split(":").map((x) => parseInt(x));
-    return tokens[0] * 60 + tokens[1];
-  };
+  const imageKey = (className: string) =>
+    className.replace(/\s/g, "_").toLowerCase();
 
-  const imageKey = (className: string) => {
-    return className.replace(/\s/g, "_").toLowerCase();
-  };
+  let loadStart = Date.now();
+  let loaded = false;
 
-  gameWindow?.webContents.addListener("did-navigate", (event, input) => {
-    time.setTime(Date.now());
+  const isLoadedData = (
+    data: GameActivityData
+  ): data is GameActivityLoadedData => data.id !== null;
 
-    if (gameURL.exec(input))
-      rpc.setActivity({
-        state: "Idle",
+  function parseActivity(data?: GameActivityData): DiscordRPC.Presence {
+    if (!data || !isLoadedData(data))
+      return {
+        startTimestamp: loadStart,
         largeImageKey: "logo",
-        startTimestamp: time,
-      });
+        state: "Loading",
+      };
 
-    if (socialURL.exec(input))
-      rpc.setActivity({
-        state: "Social",
-        largeImageKey: "logo",
-        startTimestamp: time,
-      });
+    if (!loaded) {
+      loaded = true;
+      loadStart = Date.now();
+    }
 
-    if (editorURL.exec(input))
-      rpc.setActivity({
-        state: "Editor",
-        largeImageKey: "logo",
-        startTimestamp: time,
-      });
-
-    if (viewerURL.exec(input))
-      rpc.setActivity({
-        state: "Viewer",
-        largeImageKey: "logo",
-        startTimestamp: time,
-      });
-  });
-
-  ipcMain.on("game-info", (event, text) => {
-    const info = JSON.parse(text);
-    time.setTime(Date.now() + getSeconds(info.time) * 1000);
-    rpc.setActivity({
-      details: info.map.split("_")[1],
-      state: `Playing ${info.mode}`,
+    return {
+      details: data.map,
+      state: `Playing ${data.mode}`,
       largeImageKey: "logo",
-      largeImageText: info.username,
-      smallImageKey: imageKey(info.class),
-      smallImageText: info.class,
+      largeImageText: data.user,
+      smallImageKey: imageKey(data.class.name),
+      smallImageText: data.class.name,
       endTimestamp: time,
       partyId: "krunker",
       joinSecret: gameWindow?.webContents.getURL(),
+    };
+  }
+
+  ipcMain.on("game-activity", (event, data?: GameActivityData) => {
+    rpc.setActivity(parseActivity(data)).catch(() => {
+      //
     });
   });
 
@@ -429,12 +522,15 @@ function initDiscordRPC() {
     rpc.on("RPC_MESSAGE_RECEIVED", (event) => {
       console.log(event);
     });
+
     rpc.subscribe("ACTIVITY_JOIN_REQUEST", () => {
       console.log("user");
     });
+
     rpc.subscribe("ACTIVITY_JOIN", ({ secret }: { secret: string }) => {
       gameWindow?.loadURL(secret);
     });
   });
+
   rpc.login({ clientId }).catch(console.error);
 }
