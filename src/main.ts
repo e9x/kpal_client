@@ -7,8 +7,9 @@ import DiscordRPC from "discord-rpc";
 import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from "electron";
 import type { Event } from "electron";
 import localshortcut from "electron-localshortcut";
-import Store from "electron-store";
 import { autoUpdater } from "electron-updater";
+import config from "./config.js";
+import { searchMatch } from "./matchmaker.js";
 import { editorURL, gameURL, socialURL, viewerURL } from "./regex.js";
 
 const clientId = "566623836628582412";
@@ -16,9 +17,6 @@ DiscordRPC.register(clientId);
 const rpc = new DiscordRPC.Client({ transport: "ipc" });
 const time = new Date();
 
-// Store.initRenderer()
-// new Store() allows use in renderer
-const config = new Store();
 const DEBUG = process.argv.includes("--dev") || false;
 const AMD_CPU = cpus()
   .map((c) => c.model.toLowerCase())
@@ -28,19 +26,16 @@ const AMD_CPU = cpus()
 class ClientSession {
   splashWindow: BrowserWindow | null = null;
   gameWindow: BrowserWindow | null = null;
-  menuWindow: BrowserWindow | null = null;
 
   constructor() {
     this.splashWindow = null;
     this.gameWindow = null;
-    this.menuWindow = null;
 
     this.setAppSwitches();
 
     app.on("ready", () => this.initSplashWindow());
     app.on("activate", () => {
-      if (!this.splashWindow || !this.gameWindow || !this.menuWindow)
-        this.initSplashWindow();
+      if (!this.splashWindow || !this.gameWindow) this.initSplashWindow();
     });
 
     app.on("window-all-closed", () => app.quit());
@@ -53,7 +48,6 @@ class ClientSession {
 
   start() {
     this.initGameWindow();
-    this.initMenuWindow();
     this.initKeybinds();
     this.initDiscordRPC();
   }
@@ -64,7 +58,7 @@ class ClientSession {
     //if (DEBUG) app.commandLine.appendSwitch('show-fps-counter');
     app.commandLine.appendSwitch("--in-process-gpu");
 
-    if (!config.get("tools_vsync", true)) {
+    if (!config.get("tools_vsync")) {
       app.commandLine.appendSwitch("disable-frame-rate-limit");
       if (AMD_CPU) {
         app.commandLine.appendSwitch("disable-zero-copy");
@@ -73,11 +67,11 @@ class ClientSession {
     }
     app.commandLine.appendSwitch(
       "force-color-profile",
-      config.get("tools_colorProfile", "default") as string
+      config.get("tools_colorProfile")
     );
     app.commandLine.appendSwitch("disable-http-cache");
     app.commandLine.appendSwitch("ignore-gpu-blacklist", "true");
-    if (config.get("tools_d3d9", false)) {
+    if (config.get("tools_d3d9")) {
       app.commandLine.appendSwitch("use-angle", "d3d9");
       app.commandLine.appendSwitch("renderer-process-limit", "100");
       app.commandLine.appendSwitch("max-active-webgl-contexts", "100");
@@ -126,9 +120,7 @@ class ClientSession {
       },
     });
     this.gameWindow.setMenu(null);
-    this.gameWindow.loadURL("https://krunker.io", {
-      extraHeaders: "pragma: no-cache\n",
-    });
+    this.gameWindow.loadURL("https://krunker.io");
 
     this.gameWindow.once("ready-to-show", () => {
       this.splashWindow?.close();
@@ -139,13 +131,13 @@ class ClientSession {
         });
     });
 
-    const modelsFolder = config.get("tools_folderModels", "") as string;
+    const modelsFolder = config.get("tools_folderModels");
     const modelsData: {
       filter: { urls: string[] };
       files: Record<string, string>;
     } = { filter: { urls: [] }, files: {} };
 
-    if (modelsFolder.length > 0 && config.get("tools_customModels", false)) {
+    if (modelsFolder.length > 0 && config.get("tools_customModels")) {
       const readFolder = (dir: string) =>
         readdirSync(dir).forEach((file) => {
           const fullPath = `${dir}/${file}`;
@@ -177,7 +169,7 @@ class ClientSession {
     const navClosure = (event: Event, url: string) => {
       event.preventDefault();
       if (gameURL.exec(url)) {
-        this.gameWindow?.loadURL(url, { extraHeaders: "pragma: no-cache\n" });
+        this.gameWindow?.loadURL(url);
       } else {
         shell.openExternal(url);
       }
@@ -186,9 +178,6 @@ class ClientSession {
     this.gameWindow.webContents.on("will-navigate", navClosure);
     this.gameWindow.webContents.on("new-window", navClosure);
 
-    this.gameWindow.on("focus", () => {
-      if (this.menuWindow) this.menuWindow.hide();
-    });
     this.gameWindow.on("closed", () => {
       this.gameWindow = null;
     });
@@ -244,146 +233,93 @@ class ClientSession {
           },
         ])
       );
-  }
 
-  initMenuWindow() {
-    this.menuWindow = new BrowserWindow({
-      width: 800,
-      height: 600,
-      frame: false,
-      skipTaskbar: true,
-      resizable: false,
-      movable: false,
-      show: false,
-      parent: this.gameWindow!,
-      webPreferences: {
-        enableRemoteModule: false,
-        preload: join(__dirname, "menu.js"),
-      },
-    });
-    this.menuWindow.setMenu(null);
-    this.menuWindow.loadURL(
-      pathToFileURL(join(__dirname, "../html/menu.html")).toString()
-    );
+    ipcMain.on("restart-optional", async () => {
+      const res = await dialog.showMessageBox(this.gameWindow!, {
+        message:
+          "A restart is required for changes to take affect. Do you want to restart now?",
+        buttons: ["YES", "NO"],
+      });
 
-    this.menuWindow.once("ready-to-show", () => {
-      if (DEBUG)
-        this.menuWindow?.webContents.openDevTools({
-          mode: "undocked",
-        });
-    });
-    this.menuWindow.on("closed", () => {
-      this.menuWindow = null;
-    });
+      if (res.response !== 0) return;
 
-    ipcMain.on("restart", () => {
       app.relaunch();
       app.quit();
     });
 
-    ipcMain.handle("open-folder", async () => {
-      return (
-        await dialog.showOpenDialog(this.menuWindow!, {
-          properties: ["openDirectory"],
-        })
-      ).filePaths;
+    ipcMain.on("restart", () => {
+      app.relaunch();
     });
 
-    ipcMain.on("join-game", (event, url: string) => {
-      this.gameWindow?.loadURL(url, {
-        extraHeaders: "pragma: no-cache\n",
+    ipcMain.on("reset-all", async () => {
+      const res = await dialog.showMessageBox(this.gameWindow!, {
+        message: "Are you sure you want to clear all client settings?",
+        buttons: ["YES", "NO"],
       });
+
+      if (res.response !== 0) return;
+
+      config.clear();
+      app.relaunch();
+      app.quit();
     });
 
-    ipcMain.on("visit-beta", () => {
-      this.gameWindow?.loadURL("https://beta.krunker.io", {
-        extraHeaders: "pragma: no-cache\n",
+    ipcMain.on("search-match", () => {
+      this.searchMatch();
+    });
+
+    ipcMain.handle("pick-models-folder", async () => {
+      const res = await dialog.showOpenDialog(this.gameWindow!, {
+        message: "Pick a folder for custom models",
+        properties: ["openDirectory"],
       });
-    });
-
-    ipcMain.on("resetSearchMatchMsg", () => {
-      this.menuWindow?.webContents.executeJavaScript(
-        'document.getElementById("searchMatchStatus").innerText = " ";'
-      );
-    });
-
-    ipcMain.on("gameWindowKey", (event, key: string, val: any) => {
-      this.gameWindow?.webContents.executeJavaScript(
-        `window.tools.features[${JSON.stringify(key)}].value = ${JSON.stringify(
-          val
-        )}`
-      );
-    });
-
-    ipcMain.on("gameWindowKeyPreload", (event, key: string, val: any) => {
-      this.gameWindow?.webContents.executeJavaScript(
-        `window.tools.features[${JSON.stringify(key)}].preload(${JSON.stringify(
-          val
-        )})`
-      );
-    });
-
-    ipcMain.on(
-      "sendStatus",
-      (
-        event,
-        elName: string,
-        msg = " ",
-        status = "neutral",
-        timeout = null
-      ) => {
-        this.menuWindow?.webContents
-          .executeJavaScript(
-            `${elName}.style.color = "${
-              status == "good"
-                ? "green"
-                : status == "neutral"
-                ? "orange"
-                : "red"
-            }";` + `${elName}.innerText = "${msg}";`
-          )
-          .then(() => {
-            if (timeout)
-              setInterval(
-                () =>
-                  this.menuWindow?.webContents.executeJavaScript(
-                    `${elName}.innerText = " ";`
-                  ),
-                timeout
-              );
-          });
-      }
-    );
-
-    this.gameWindow?.webContents.on("did-navigate-in-page", (event, url) => {
-      if (gameURL.exec(url) && url.includes("?")) {
-        this.menuWindow?.webContents.send("server-url", url);
-      }
+      const modelsFolder = res.filePaths[0];
+      config.set("tools_folderModels", modelsFolder);
+      return modelsFolder;
     });
   }
 
+  async searchMatch() {
+    if (!this.gameWindow) return;
+
+    const defaultRegion = await this.gameWindow.webContents.executeJavaScript(
+      "localStorage.pingRegion7"
+    );
+    const match = await searchMatch(defaultRegion);
+
+    if (!this.gameWindow) return;
+
+    if (!match)
+      return dialog.showMessageBox(this.gameWindow!, {
+        message: "No Matches Found :(",
+      });
+
+    this.gameWindow.webContents.loadURL(match);
+  }
+
   initKeybinds() {
-    localshortcut.register("Esc", () => {
+    if (!this.gameWindow) return;
+
+    localshortcut.register(this.gameWindow, "Esc", () => {
       this.gameWindow?.webContents.executeJavaScript(
         "document.exitPointerLock();"
       );
     });
-    localshortcut.register("F5", () => {
+
+    localshortcut.register(this.gameWindow, "F4", () => {
+      this.searchMatch();
+    });
+
+    localshortcut.register(this.gameWindow, "F5", () => {
       this.gameWindow?.reload();
     });
-    localshortcut.register("F11", () => {
+
+    localshortcut.register(this.gameWindow, "F11", () => {
       this.gameWindow?.setFullScreen(!this.gameWindow.isFullScreen());
     });
-    localshortcut.register("Alt+F4", () => {
+
+    localshortcut.register(this.gameWindow, "Alt+F4", () => {
       app.quit();
-    });
-    localshortcut.register("Tab", () => {
-      if (!this.menuWindow?.isVisible() && this.gameWindow?.isVisible()) {
-        this.menuWindow?.show();
-      } else {
-        this.menuWindow?.hide();
-        this.gameWindow?.focus();
-      }
     });
   }
 
@@ -480,9 +416,7 @@ class ClientSession {
         console.log("user");
       });
       rpc.subscribe("ACTIVITY_JOIN", ({ secret }: { secret: string }) => {
-        this.gameWindow?.loadURL(secret, {
-          extraHeaders: "pragma: no-cache\n",
-        });
+        this.gameWindow?.loadURL(secret);
       });
     });
     rpc.login({ clientId }).catch(console.error);

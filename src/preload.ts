@@ -1,12 +1,5 @@
+import "./tools.js";
 import { editorURL, gameURL, viewerURL } from "./regex.js";
-import Tools from "./tools.js";
-
-declare global {
-  // eslint-disable-next-line no-var
-  var tools: Tools;
-}
-
-window.tools = new Tools();
 
 const changePlayerListHotKey = () =>
   localStorage.setItem("cont_listKey", "113");
@@ -22,6 +15,5 @@ document.addEventListener("DOMContentLoaded", () => {
     window.onbeforeunload = null;
   } else if (gameURL.exec(location.href)) {
     fixMenuIcons();
-    tools.preload();
   }
 });
