@@ -69,4 +69,8 @@ export function drawKPalTheme() {
   style(".hostToggle", "background", "#ff4747");
   sheet.insertRule("::placeholder { color: rgba(255, 255, 255, 0.2) }", 0);
   sheet.insertRule("#presetSelect { background-color: #222 !important }", 0);
+  sheet.insertRule(
+    ".lgn:not(:hover) > .material-icons { color: #f95e6d !important }",
+    0
+  );
 }
