@@ -2,9 +2,17 @@
 import { readdirSync, statSync } from "fs";
 import { cpus } from "os";
 import { join } from "path";
-import { pathToFileURL } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
 import DiscordRPC from "discord-rpc";
-import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from "electron";
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  Menu,
+  protocol,
+  shell,
+} from "electron";
 import type { Event } from "electron";
 import localshortcut from "electron-localshortcut";
 import { autoUpdater } from "electron-updater";
@@ -44,6 +52,10 @@ class ClientSession {
       localshortcut.unregisterAll();
       this.gameWindow?.close();
     });
+
+    protocol.registerSchemesAsPrivileged([
+      { scheme: "swapper", privileges: { bypassCSP: true, secure: true } },
+    ]);
   }
 
   start() {
@@ -115,11 +127,12 @@ class ClientSession {
       height: 900,
       show: false,
       webPreferences: {
-        webSecurity: false,
         enableRemoteModule: false,
+        webSecurity: false,
         preload: join(__dirname, "preload.js"),
       },
     });
+
     this.gameWindow.setMenu(null);
     this.gameWindow.loadURL("https://krunker.io");
 
@@ -132,45 +145,73 @@ class ClientSession {
         });
     });
 
-    const modelsFolder = config.get("tools_folderModels");
-    const modelsData: {
+    protocol.registerFileProtocol(
+      "swapper",
+      (request, callback) => {
+        const url = new URL(request.url);
+        callback({
+          path: fileURLToPath(url.toString().replace(url.protocol, "file:")),
+        });
+      },
+      (err) => {
+        if (err) console.error("Failed to register protocol");
+      }
+    );
+
+    const swap: {
       filter: { urls: string[] };
       files: Record<string, string>;
     } = { filter: { urls: [] }, files: {} };
 
-    if (modelsFolder.length > 0 && config.get("tools_customModels")) {
-      const readFolder = (dir: string, assets = true) =>
-        readdirSync(dir).forEach((file) => {
-          const fullPath = `${dir}/${file}`;
+    const readFolder = (dir: string, assets = true) => {
+      const recursive = (dir: string, baseDir: string) => {
+        for (const file of readdirSync(dir)) {
+          const fullPath = join(dir, file);
           if (statSync(fullPath).isDirectory()) {
-            readFolder(fullPath);
-          } else {
-            const krURL =
-              "https://" +
-              (assets ? "assets." : "") +
-              "krunker.io" +
-              fullPath.replace(modelsFolder, "");
-            modelsData.filter.urls.push(krURL);
-            modelsData.files[krURL] = pathToFileURL(fullPath).toString();
+            recursive(fullPath, baseDir);
+            break;
           }
-        });
 
+          const krURL =
+            "*://" +
+            (assets ? "assets." : "") +
+            "krunker.io" +
+            fullPath.replace(baseDir, "") +
+            "*";
+
+          if (!swap.filter.urls.includes(krURL)) {
+            swap.filter.urls.push(krURL);
+            const url = pathToFileURL(fullPath);
+            swap.files[krURL.replace(/\*/g, "")] = url
+              .toString()
+              .replace(url.protocol, "swapper:");
+          }
+        }
+      };
+
+      recursive(dir, dir);
+    };
+
+    const modelsFolder = config.get("tools_folderModels");
+
+    if (config.get("tools_customModels") && modelsFolder.length > 0)
       readFolder(modelsFolder);
 
-      if (config.get("tools_theme", false))
-        readFolder(join(__dirname, "../img/theme"), false);
+    if (config.get("tools_theme", false))
+      readFolder(join(__dirname, "../img/theme"), false);
 
-      if (modelsData.filter.urls.length > 0) {
-        this.gameWindow.webContents.session.webRequest.onBeforeRequest(
-          modelsData.filter,
-          (data, callback) => {
-            callback({
-              cancel: false,
-              redirectURL: modelsData.files[data.url] || data.url,
-            });
-          }
-        );
-      }
+    if (swap.filter.urls.length > 0) {
+      this.gameWindow.webContents.session.webRequest.onBeforeRequest(
+        swap.filter,
+        (data, callback) => {
+          callback({
+            cancel: false,
+            redirectURL:
+              swap.files[data.url.replace(/https|http|(\?.*)|(#.*)/gi, "")] ||
+              data.url,
+          });
+        }
+      );
     }
 
     const navClosure = (event: Event, url: string) => {
@@ -282,6 +323,7 @@ class ClientSession {
         properties: ["openDirectory"],
       });
       const modelsFolder = res.filePaths[0];
+      if (!modelsFolder) return;
       config.set("tools_folderModels", modelsFolder);
       return modelsFolder;
     });
