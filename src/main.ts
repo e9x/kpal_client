@@ -1,24 +1,15 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/ban-ts-comment */
-import { readdirSync, statSync } from "fs";
 import { cpus } from "os";
 import { join } from "path";
-import { fileURLToPath, pathToFileURL } from "url";
+import { pathToFileURL } from "url";
 import DiscordRPC from "discord-rpc";
-import {
-  app,
-  BrowserWindow,
-  dialog,
-  ipcMain,
-  Menu,
-  protocol,
-  shell,
-} from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from "electron";
 import type { Event } from "electron";
 import localshortcut from "electron-localshortcut";
 import { autoUpdater } from "electron-updater";
 import config from "./config.js";
 import { searchMatch } from "./matchmaker.js";
 import { editorURL, gameURL, socialURL, viewerURL } from "./regex.js";
+import { addSwapper, initSwapper } from "./swapper.js";
 
 const clientId = "566623836628582412";
 DiscordRPC.register(clientId);
@@ -60,25 +51,27 @@ if (config.get("tools_d3d9")) {
 
 let splashWindow: BrowserWindow | null = null;
 let gameWindow: BrowserWindow | null = null;
+let socialWindow: BrowserWindow | null = null;
 
-app.on("ready", () => initSplashWindow());
+app.on("ready", () => {
+  initSwapper();
+  initSplashWindow();
+});
+
 app.on("activate", () => {
   if (!splashWindow || !gameWindow) initSplashWindow();
 });
 
 app.on("window-all-closed", () => app.quit());
 app.on("before-quit", () => {
-  // @ts-ignore
-  localshortcut.unregisterAll();
-  gameWindow?.close();
+  if (gameWindow) {
+    localshortcut.unregisterAll(gameWindow);
+    gameWindow.close();
+  }
 });
 
-protocol.registerSchemesAsPrivileged([
-  { scheme: "swapper", privileges: { bypassCSP: true, secure: true } },
-]);
-
 function start() {
-  initGameWindow();
+  initGameWindow("https://krunker.io/");
   initKeybinds();
   initDiscordRPC();
 }
@@ -113,7 +106,35 @@ function initSplashWindow() {
   });
 }
 
-function initGameWindow() {
+function listenNav(window: BrowserWindow) {
+  function nav(event: Event, url: string, newWindow: boolean) {
+    if (socialURL.test(url) || editorURL.test(url) || viewerURL.test(url)) {
+      if (window !== socialWindow || newWindow) {
+        event.preventDefault();
+        initSocialWindow(url);
+      }
+    } else if (gameURL.test(url)) {
+      if (window !== gameWindow || newWindow) {
+        event.preventDefault();
+        initGameWindow(url);
+      }
+    } else {
+      event.preventDefault();
+      shell.openExternal(url);
+    }
+  }
+
+  window.webContents.addListener("did-navigate", (event, url) =>
+    nav(event, url, false)
+  );
+  window.webContents.addListener("new-window", (event, url) =>
+    nav(event, url, true)
+  );
+}
+
+function initGameWindow(url: string) {
+  if (gameWindow) return gameWindow.loadURL(url);
+
   gameWindow = new BrowserWindow({
     width: 1600,
     height: 900,
@@ -126,7 +147,7 @@ function initGameWindow() {
   });
 
   gameWindow.setMenu(null);
-  gameWindow.loadURL("https://krunker.io");
+  gameWindow.loadURL(url);
 
   gameWindow.once("ready-to-show", () => {
     splashWindow?.close();
@@ -137,90 +158,13 @@ function initGameWindow() {
       });
   });
 
-  protocol.registerFileProtocol(
-    "swapper",
-    (request, callback) => {
-      const url = new URL(request.url);
-      callback({
-        path: fileURLToPath(url.toString().replace(url.protocol, "file:")),
-      });
-    },
-    (err) => {
-      if (err) console.error("Failed to register protocol");
-    }
-  );
-
-  const swap: {
-    filter: { urls: string[] };
-    files: Record<string, string>;
-  } = { filter: { urls: [] }, files: {} };
-
-  const readFolder = (dir: string, assets = true) => {
-    const recursive = (dir: string, baseDir: string) => {
-      for (const file of readdirSync(dir)) {
-        const fullPath = join(dir, file);
-        if (statSync(fullPath).isDirectory()) {
-          recursive(fullPath, baseDir);
-          break;
-        }
-
-        const krURL =
-          "*://" +
-          (assets ? "assets." : "") +
-          "krunker.io" +
-          fullPath.replace(baseDir, "") +
-          "*";
-
-        if (!swap.filter.urls.includes(krURL)) {
-          swap.filter.urls.push(krURL);
-          const url = pathToFileURL(fullPath);
-          swap.files[krURL.replace(/\*/g, "")] = url
-            .toString()
-            .replace(url.protocol, "swapper:");
-        }
-      }
-    };
-
-    recursive(dir, dir);
-  };
-
-  const modelsFolder = config.get("tools_folderModels");
-
-  if (config.get("tools_customModels") && modelsFolder.length > 0)
-    readFolder(modelsFolder);
-
-  if (config.get("tools_theme", false))
-    readFolder(join(__dirname, "../img/theme"), false);
-
-  if (swap.filter.urls.length > 0) {
-    gameWindow.webContents.session.webRequest.onBeforeRequest(
-      swap.filter,
-      (data, callback) => {
-        callback({
-          cancel: false,
-          redirectURL:
-            swap.files[data.url.replace(/https|http|(\?.*)|(#.*)/gi, "")] ||
-            data.url,
-        });
-      }
-    );
-  }
-
-  const navClosure = (event: Event, url: string) => {
-    event.preventDefault();
-    if (gameURL.exec(url)) {
-      gameWindow?.loadURL(url);
-    } else {
-      shell.openExternal(url);
-    }
-  };
-
-  gameWindow.webContents.on("will-navigate", navClosure);
-  gameWindow.webContents.on("new-window", navClosure);
-
   gameWindow.on("closed", () => {
     gameWindow = null;
   });
+
+  listenNav(gameWindow);
+
+  addSwapper(gameWindow);
 
   if (process.platform == "darwin")
     Menu.setApplicationMenu(
@@ -320,6 +264,38 @@ function initGameWindow() {
     config.set("tools_folderModels", modelsFolder);
     return modelsFolder;
   });
+}
+
+function initSocialWindow(url: string) {
+  if (socialWindow) return socialWindow.loadURL(url);
+
+  socialWindow = new BrowserWindow({
+    width: 1280,
+    height: 720,
+    show: false,
+    webPreferences: {
+      enableRemoteModule: false,
+      webSecurity: false,
+      preload: join(__dirname, "preload.js"),
+    },
+  });
+
+  socialWindow.setMenu(null);
+  socialWindow.loadURL(url);
+
+  socialWindow.once("ready-to-show", () => {
+    socialWindow?.show();
+    if (DEBUG)
+      socialWindow?.webContents.openDevTools({
+        mode: "undocked",
+      });
+  });
+
+  socialWindow.on("closed", () => {
+    socialWindow = null;
+  });
+
+  listenNav(socialWindow);
 }
 
 async function gameSearchMatch() {
