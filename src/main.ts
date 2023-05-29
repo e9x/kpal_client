@@ -179,6 +179,7 @@ function initGameWindow(url: string) {
   gameWindow.once("ready-to-show", () => {
     gameWindow?.show();
     setTimeout(() => splashWindow?.close(), 1e3);
+    if (config.get("tools_fullScreen")) gameWindow?.setFullScreen(true);
     if (DEBUG)
       gameWindow?.webContents.openDevTools({
         mode: "undocked",
@@ -449,7 +450,9 @@ function initKeybinds() {
   });
 
   localshortcut.register(gameWindow, "F11", () => {
-    gameWindow?.setFullScreen(!gameWindow.isFullScreen());
+    const fullscreen = !gameWindow?.isFullScreen();
+    config.set("tools_fullScreen", fullscreen);
+    gameWindow?.setFullScreen(fullscreen);
   });
 
   localshortcut.register(gameWindow, "Alt+F4", () => {
