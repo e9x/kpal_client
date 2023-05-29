@@ -1,6 +1,16 @@
-# Krunker Client
+# KPal Client
+
+<img src="./img/logo.png" alt="logo" width="200"/>
 
 Electron desktop client for Krunker.IO
+
+## Keybinds
+
+- <kbd>F3</kbd> Quick search using matchmaker
+- <kbd>F4</kbd> Find a random new match
+- <kbd>F5</kbd> Refresh the page
+- <kbd>F11</kbd> Enter/exit fullscreen
+- <kbd>ALT</kbd> + <kbd>F4</kbd> Close window
 
 ## Flags
 
