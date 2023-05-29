@@ -53,7 +53,7 @@ class ClientSession {
   }
 
   setAppSwitches() {
-    if (DEBUG && process.argv.includes("--remote-debug"))
+    if (process.argv.includes("--remote-debug"))
       app.commandLine.appendSwitch("--remote-debugging-port", "9222");
 
     //if (DEBUG) app.commandLine.appendSwitch('show-fps-counter');
