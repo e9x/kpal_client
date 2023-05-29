@@ -178,9 +178,7 @@ function initGameWindow(url: string) {
 
   gameWindow.once("ready-to-show", () => {
     gameWindow?.show();
-    gameWindow?.addListener("show", () => {
-      splashWindow?.close();
-    });
+    setTimeout(() => splashWindow?.close(), 1e3);
     if (DEBUG)
       gameWindow?.webContents.openDevTools({
         mode: "undocked",
