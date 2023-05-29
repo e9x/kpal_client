@@ -230,8 +230,7 @@ function initGameWindow() {
           submenu: [
             {
               label: "About Application",
-              // @ts-ignore
-              selector: "orderFrontStandardAboutPanel:",
+              role: "about",
             },
             { type: "separator" },
             {
@@ -247,30 +246,29 @@ function initGameWindow() {
             {
               label: "Undo",
               accelerator: "CmdOrCtrl+Z",
-              selector: "undo:",
+              role: "undo",
             },
             {
               label: "Redo",
               accelerator: "Shift+CmdOrCtrl+Z",
-              selector: "redo:",
+              role: "redo",
             },
             { type: "separator" },
-            { label: "Cut", accelerator: "CmdOrCtrl+X", selector: "cut:" },
+            { label: "Cut", accelerator: "CmdOrCtrl+X", role: "cut" },
             {
               label: "Copy",
               accelerator: "CmdOrCtrl+C",
-              selector: "copy:",
+              role: "copy",
             },
             {
               label: "Paste",
               accelerator: "CmdOrCtrl+V",
-              selector: "paste:",
+              role: "paste",
             },
             {
               label: "Select All",
               accelerator: "CmdOrCtrl+A",
-              // @ts-ignore
-              selector: "selectAll:",
+              role: "selectAll",
             },
           ],
         },
