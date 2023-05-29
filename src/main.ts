@@ -468,9 +468,14 @@ function checkForUpdates() {
   });
   autoUpdater.on("error", (err) => {
     splashWindow?.webContents.send("error");
-    dialog.showErrorBox("Download Failed", err.toString());
-    // start later
-    setTimeout(() => start(), 5e3);
+    dialog
+      .showMessageBox(splashWindow!, {
+        type: "error",
+        title: "Download Failed",
+        message: err.toString(),
+        buttons: ["OK"],
+      })
+      .then(() => start());
   });
   autoUpdater.checkForUpdates();
 }
