@@ -161,11 +161,15 @@ function initGameWindow(url: string) {
   gameWindow.loadURL(url);
 
   gameWindow.addListener("focus", () => {
-    rpc.setActivity({
-      state: "Idle",
-      largeImageKey: "logo",
-      startTimestamp: new Date(),
-    });
+    rpc
+      .setActivity({
+        state: "Idle",
+        largeImageKey: "logo",
+        startTimestamp: new Date(),
+      })
+      .catch(() => {
+        //
+      });
   });
 
   gameWindow.once("ready-to-show", () => {
@@ -298,11 +302,15 @@ function initSocialWindow(url: string) {
   socialWindow.loadURL(url);
 
   socialWindow.addListener("focus", () => {
-    rpc.setActivity({
-      state: "Social",
-      largeImageKey: "logo",
-      startTimestamp: new Date(),
-    });
+    rpc
+      .setActivity({
+        state: "Social",
+        largeImageKey: "logo",
+        startTimestamp: new Date(),
+      })
+      .catch(() => {
+        //
+      });
   });
 
   socialWindow.once("ready-to-show", () => {
@@ -333,11 +341,15 @@ function initEditorWindow(url: string) {
   editorWindow.loadURL(url);
 
   editorWindow.addListener("focus", () => {
-    rpc.setActivity({
-      state: "Editor",
-      largeImageKey: "logo",
-      startTimestamp: new Date(),
-    });
+    rpc
+      .setActivity({
+        state: "Editor",
+        largeImageKey: "logo",
+        startTimestamp: new Date(),
+      })
+      .catch(() => {
+        //
+      });
   });
 
   editorWindow.once("ready-to-show", () => {
@@ -368,11 +380,15 @@ function initViewerWindow(url: string) {
   viewerWindow.loadURL(url);
 
   viewerWindow.addListener("focus", () => {
-    rpc.setActivity({
-      state: "Viewer",
-      largeImageKey: "logo",
-      startTimestamp: new Date(),
-    });
+    rpc
+      .setActivity({
+        state: "Viewer",
+        largeImageKey: "logo",
+        startTimestamp: new Date(),
+      })
+      .catch(() => {
+        //
+      });
   });
 
   viewerWindow.once("ready-to-show", () => {
@@ -516,5 +532,7 @@ function initDiscordRPC() {
     });
   });
 
-  rpc.login({ clientId }).catch(console.error);
+  rpc.login({ clientId }).catch(() => {
+    //
+  });
 }
