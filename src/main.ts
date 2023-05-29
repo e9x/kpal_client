@@ -288,7 +288,6 @@ function initGameWindow(url: string) {
     });
     const modelsFolder = res.filePaths[0];
     if (!modelsFolder) return;
-    config.set("tools_folderModels", modelsFolder);
     return modelsFolder;
   });
 }
