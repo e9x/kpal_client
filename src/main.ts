@@ -16,7 +16,8 @@ DiscordRPC.register(clientId);
 const rpc = new DiscordRPC.Client({ transport: "ipc" });
 const time = new Date();
 
-const DEBUG = process.argv.includes("--dev") || false;
+const DEBUG = process.argv.includes("--dev");
+const SANDBOX = process.argv.includes("--sandbox");
 const AMD_CPU = cpus()
   .map((c) => c.model.toLowerCase())
   .join("")
@@ -73,7 +74,9 @@ app.on("before-quit", () => {
 });
 
 function start() {
-  initGameWindow("https://krunker.io/");
+  initGameWindow(
+    SANDBOX ? "https://krunker.io/?sandbox" : "https://krunker.io/"
+  );
   initKeybinds();
   initDiscordRPC();
 }
