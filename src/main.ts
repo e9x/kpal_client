@@ -435,8 +435,14 @@ function initKeybinds() {
     gameWindow?.webContents.executeJavaScript("document.exitPointerLock();");
   });
 
-  localshortcut.register(gameWindow, "F4", () => {
+  // Find match according to filters
+  localshortcut.register(gameWindow, "F3", () => {
     gameSearchMatch();
+  });
+
+  // Find random match
+  localshortcut.register(gameWindow, "F4", () => {
+    gameWindow?.webContents.loadURL("https://krunker.io/");
   });
 
   localshortcut.register(gameWindow, "F5", () => {
