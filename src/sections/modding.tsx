@@ -13,7 +13,7 @@ export default function ModdingSection() {
   return (
     <Set title="Modding">
       <Switch
-        title="Custom Models"
+        title="Resource Swapper"
         defaultChecked={config.get("tools_customModels")}
         onChange={(e) =>
           config.set("tools_customModels", e.currentTarget.checked)

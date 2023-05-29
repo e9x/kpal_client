@@ -319,7 +319,7 @@ class ClientSession {
 
     ipcMain.handle("pick-models-folder", async () => {
       const res = await dialog.showOpenDialog(this.gameWindow!, {
-        message: "Pick a folder for custom models",
+        message: "Pick a folder for the resource swapper",
         properties: ["openDirectory"],
       });
       const modelsFolder = res.filePaths[0];
