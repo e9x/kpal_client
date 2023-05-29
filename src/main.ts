@@ -100,11 +100,12 @@ function initSplashWindow() {
 
   splashWindow.once("ready-to-show", () => {
     splashWindow?.show();
-    if (DEBUG)
+    if (DEBUG) {
       splashWindow?.webContents.openDevTools({
         mode: "undocked",
       });
-    checkForUpdates();
+      setTimeout(start, 1000);
+    } else checkForUpdates();
   });
 }
 
@@ -449,7 +450,6 @@ function initKeybinds() {
 }
 
 function checkForUpdates() {
-  if (DEBUG || process.platform == "darwin") return start();
   autoUpdater.on("download-progress", (data) => {
     splashWindow?.webContents.send(
       "download-progress",
