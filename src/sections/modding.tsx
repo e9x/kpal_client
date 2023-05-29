@@ -18,7 +18,7 @@ export default function ModdingSection() {
         }
       />
       <Picker
-        title="Models Folder"
+        title="Swapper Folder"
         defaultValue={config.get("tools_folderModels")}
         attention
         description="Requires restart"
