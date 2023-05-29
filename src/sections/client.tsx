@@ -19,6 +19,11 @@ export default function ClientSection() {
         }}
       />
       <Switch
+        title="KPal Theme"
+        defaultChecked={config.get("tools_theme")}
+        onChange={(e) => config.set("tools_theme", e.currentTarget.checked)}
+      />
+      <Switch
         title="DX9 Rendering"
         defaultChecked={config.get("tools_d3d9")}
         attention

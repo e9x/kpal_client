@@ -1,4 +1,6 @@
 import "./tools.js";
+import config from "./config.js";
+import { drawKPalTheme } from "./kpalTheme.js";
 import { editorURL, gameURL, viewerURL } from "./regex.js";
 
 const changePlayerListHotKey = () =>
@@ -11,6 +13,8 @@ const fixMenuIcons = () => {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
+  if (config.get("tools_theme")) drawKPalTheme();
+
   if (editorURL.exec(location.href) || viewerURL.exec(location.href)) {
     window.onbeforeunload = null;
   } else if (gameURL.exec(location.href)) {

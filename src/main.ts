@@ -139,20 +139,26 @@ class ClientSession {
     } = { filter: { urls: [] }, files: {} };
 
     if (modelsFolder.length > 0 && config.get("tools_customModels")) {
-      const readFolder = (dir: string) =>
+      const readFolder = (dir: string, assets = true) =>
         readdirSync(dir).forEach((file) => {
           const fullPath = `${dir}/${file}`;
           if (statSync(fullPath).isDirectory()) {
             readFolder(fullPath);
           } else {
             const krURL =
-              "https://krunker.io" + fullPath.replace(modelsFolder, "");
+              "https://" +
+              (assets ? "assets." : "") +
+              "krunker.io" +
+              fullPath.replace(modelsFolder, "");
             modelsData.filter.urls.push(krURL);
             modelsData.files[krURL] = pathToFileURL(fullPath).toString();
           }
         });
 
       readFolder(modelsFolder);
+
+      if (config.get("tools_theme", false))
+        readFolder(join(__dirname, "../img/theme"), false);
 
       if (modelsData.filter.urls.length > 0) {
         this.gameWindow.webContents.session.webRequest.onBeforeRequest(

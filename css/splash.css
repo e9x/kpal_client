@@ -1,75 +1,66 @@
-html,
-body {
-  background-color: #6d6d6d;
-  padding: 0px;
-  background-image: url("../textures/wall.png");
-  background-repeat: repeat;
-  background-size: 300px 300px;
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
-  overflow: hidden;
-  margin: 0px;
+html, body {
+	background-color: #1b1b1b;
+	padding: 0px;
+	overflow: hidden;
+	margin: 0px;
 }
 
 body {
-  border: 8px solid rgba(0, 0, 0, 0.6);
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
+    border: 8px solid rgba(14, 14, 14, 0.6);
+	 /* border-radius: 6px; */
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
 }
 
 @font-face {
-  font-family: "GameFont";
-  src: url("fonts/krunker.ttf");
+	font-family: 'GameFont';
+	src: url('fonts/krunker.ttf');
 }
 
 * {
-  outline: none;
-  font-family: "GameFont";
-  color: #353535;
-  user-select: none;
+	outline: none;
+	font-family: 'GameFont';
+	color: #353535;
+	user-select: none;
 }
 
 img {
-  top: 0;
-  bottom: 0;
-  margin: auto;
-  position: absolute;
+	width: 500px;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	margin: auto;
+	position: absolute;
 }
 
 a {
-  text-transform: uppercase;
-  font-size: 12px;
+	text-transform: uppercase;
+	font-size: 12px;
 
-  color: #fff;
-  text-shadow: -1px -1px 0 #202020, 1px -1px 0 #202020, -1px 1px 0 #202020,
-    1px 1px 0 #202020, -2px -2px 0 #202020, 2px -2px 0 #202020,
-    -2px 2px 0 #202020, 2px 2px 0 #202020;
+	color: #fff;
+	text-shadow:
+		-1px -1px 0 #000,
+		1px -1px 0 #000,
+		-1px 1px 0 #000,
+		1px 1px 0 #000,
+		-2px -2px 0 #000,
+		2px -2px 0 #000,
+		-2px 2px 0 #000,
+		2px 2px 0 #000;
 
-  bottom: 0;
-  position: absolute;
-  margin: 4px;
-}
-
-#logo {
-  background-color: rgba(0, 0, 0, 0.5);
-  border-top: 8px solid rgba(248, 197, 92, 0.5);
-  border-bottom: 8px solid rgba(248, 197, 92, 0.5);
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  height: 200px;
-  width: 100%;
-  margin: auto;
+    bottom: 0;
+    position: absolute;
+    margin: 4px;
 }
 
 #updateStatus {
-  left: 0;
+	left: 0;
 }
 
 #version {
-  right: 0;
+	right: 0;
 }

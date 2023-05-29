@@ -13,6 +13,7 @@ const config = new Store<{
   tools_minPlayersSlider: number;
   tools_maxPlayersSlider: number;
   tools_autoSearch: boolean;
+  tools_theme: boolean;
 }>({
   defaults: {
     tools_vsync: true,
@@ -27,6 +28,7 @@ const config = new Store<{
     tools_minPlayersSlider: 0,
     tools_maxPlayersSlider: 8,
     tools_autoSearch: false,
+    tools_theme: false,
   },
 });
 
