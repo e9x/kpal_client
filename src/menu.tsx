@@ -22,8 +22,9 @@ export function drawWatermark() {
     margin: "auto",
     position: "absolute",
   } as CSSStyleDeclaration);
-
-  document.body.appendChild(el);
+  document.addEventListener("DOMContentLoaded", () =>
+    document.body.appendChild(el)
+  );
 }
 
 export default function KPalMenu() {
