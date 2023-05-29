@@ -153,7 +153,6 @@ function initGameWindow(url: string) {
     show: false,
     webPreferences: {
       enableRemoteModule: false,
-      webSecurity: false,
       preload: join(__dirname, "preload.js"),
     },
   });
@@ -293,11 +292,6 @@ function initSocialWindow(url: string) {
     width: 1280,
     height: 720,
     show: false,
-    webPreferences: {
-      enableRemoteModule: false,
-      webSecurity: false,
-      preload: join(__dirname, "preload.js"),
-    },
   });
 
   socialWindow.setMenu(null);
@@ -333,11 +327,6 @@ function initEditorWindow(url: string) {
     width: 1280,
     height: 720,
     show: false,
-    webPreferences: {
-      enableRemoteModule: false,
-      webSecurity: false,
-      preload: join(__dirname, "preload.js"),
-    },
   });
 
   editorWindow.setMenu(null);
@@ -373,11 +362,6 @@ function initViewerWindow(url: string) {
     width: 1280,
     height: 720,
     show: false,
-    webPreferences: {
-      enableRemoteModule: false,
-      webSecurity: false,
-      preload: join(__dirname, "preload.js"),
-    },
   });
 
   viewerWindow.setMenu(null);
