@@ -250,6 +250,7 @@ class ClientSession {
 
     ipcMain.on("restart", () => {
       app.relaunch();
+      app.quit();
     });
 
     ipcMain.on("reset-all", async () => {
