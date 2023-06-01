@@ -2,15 +2,13 @@
   "name": "kpal_client",
   "version": "1.2.4",
   "description": "Krunker Desktop Client",
+  "author": "e9x",
   "repository": {
     "type": "git",
     "url": "https://github.com/e9x/kpal-client.git"
   },
   "license": "GPL-3.0",
   "main": "js/main.js",
-  "files": [
-    "js"
-  ],
   "scripts": {
     "start": "electron .",
     "build": "tsc",
