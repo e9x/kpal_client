@@ -1,5 +1,5 @@
 {
-  "name": "kpal-client",
+  "name": "kpal_client",
   "version": "1.2.4",
   "description": "Krunker Desktop Client",
   "repository": {
@@ -7,20 +7,36 @@
     "url": "https://github.com/e9x/kpal-client.git"
   },
   "license": "GPL-3.0",
-  "main": "dist/main.js",
+  "main": "js/main.js",
+  "files": [
+    "js"
+  ],
   "scripts": {
     "start": "electron .",
     "build": "tsc",
-    "watch": "tsc -w"
+    "watch": "tsc -w",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "productName": "KPal Client",
+    "appId": "kpal_client",
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "mac": {
+      "category": "public.app-category.games"
+    }
   },
   "dependencies": {
     "@types/react": "^18.2.7",
     "@types/react-dom": "^18.2.4",
     "discord-rpc": "^4.0.1",
-    "electron": "^9.4.4",
     "electron-localshortcut": "^3.1.0",
     "electron-store": "^8.1.0",
-    "electron-updater": "^3.2.3",
+    "electron-updater": "^5.3.0",
     "krunker-ui": "^1.0.0-alpha.4",
     "node-fetch": "^2.6.11",
     "react": "^18.2.0",
@@ -33,10 +49,15 @@
     "@types/node": "^12.20.55",
     "@types/node-fetch": "^2.6.4",
     "@typescript-eslint/eslint-plugin": "^5.59.7",
+    "electron": "^9.4.4",
+    "electron-builder": "^23.6.0",
     "eslint": "^8.41.0",
     "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-prettier": "^4.2.1",
     "prettier": "^2.8.8",
     "typescript": "^5.0.4"
+  },
+  "overrides": {
+    "register-scheme": "file:./register-scheme"
   }
 }

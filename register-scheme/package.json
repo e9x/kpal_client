@@ -1,0 +1,4 @@
+{
+  "name": "register-scheme",
+  "description": "Mock module to bypass node-gyp build errors"
+}
