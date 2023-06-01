@@ -7,7 +7,6 @@ import type { Event } from "electron";
 import localshortcut from "electron-localshortcut";
 import { autoUpdater } from "electron-updater";
 import config from "./config.js";
-import { searchMatch } from "./matchmaker.js";
 import { editorURL, gameURL, socialURL, viewerURL } from "./regex.js";
 import { addSwapper, initSwapper } from "./swapper.js";
 
@@ -247,6 +246,14 @@ function initGameWindow(url: string) {
       ])
     );
 
+  ipcMain.on("search-match-failure", () => {
+    dialog.showMessageBox(gameWindow!, {
+      message: "Unable to find a match",
+      type: "error",
+      buttons: ["OK"],
+    });
+  });
+
   ipcMain.on("restart-optional", async () => {
     const res = await dialog.showMessageBox(gameWindow!, {
       message:
@@ -276,10 +283,6 @@ function initGameWindow(url: string) {
     config.clear();
     app.relaunch();
     app.quit();
-  });
-
-  ipcMain.on("search-match", () => {
-    gameSearchMatch();
   });
 
   ipcMain.handle("pick-models-folder", async () => {
@@ -410,24 +413,6 @@ function initViewerWindow(url: string) {
   listenNav(viewerWindow);
 }
 
-async function gameSearchMatch() {
-  if (!gameWindow) return;
-
-  const defaultRegion = await gameWindow.webContents.executeJavaScript(
-    "localStorage.pingRegion7"
-  );
-  const match = await searchMatch(defaultRegion);
-
-  if (!gameWindow) return;
-
-  if (!match)
-    return dialog.showMessageBox(gameWindow!, {
-      message: "No Matches Found :(",
-    });
-
-  gameWindow.webContents.loadURL(match);
-}
-
 function initKeybinds() {
   if (!gameWindow) return;
 
@@ -437,7 +422,7 @@ function initKeybinds() {
 
   // Find match according to filters
   localshortcut.register(gameWindow, "F3", () => {
-    gameSearchMatch();
+    gameWindow?.webContents.send("search-match");
   });
 
   // Find random match

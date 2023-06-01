@@ -36,7 +36,6 @@
     "electron-store": "^8.1.0",
     "electron-updater": "^5.3.0",
     "krunker-ui": "^1.0.0-alpha.4",
-    "node-fetch": "^2.6.11",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
@@ -45,7 +44,6 @@
     "@types/discord-rpc": "^4.0.4",
     "@types/electron-localshortcut": "^3.1.0",
     "@types/node": "^12.20.55",
-    "@types/node-fetch": "^2.6.4",
     "@typescript-eslint/eslint-plugin": "^5.59.7",
     "electron": "^9.4.4",
     "electron-builder": "^23.6.0",

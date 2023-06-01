@@ -1,5 +1,4 @@
-import { session } from "electron";
-import fetch from "node-fetch";
+import { ipcRenderer } from "electron";
 import config from "./config.js";
 
 export const gameModes: string[] = [
@@ -107,7 +106,9 @@ function parseGameAPI(gameAPI: GameAPI) {
   };
 }
 
-export async function searchMatch(defaultRegion: string) {
+export async function searchMatch() {
+  const defaultRegion = localStorage.pingRegion7 || "";
+
   const region = config.get("tools_region");
   const mode = config.get("tools_mode");
   const map = config.get("tools_map");
@@ -126,12 +127,7 @@ export async function searchMatch(defaultRegion: string) {
     console.log("searchMatchStatus", "Searching...");
 
     const res = await fetch(
-      "https://matchmaker.krunker.io/game-list?hostname=krunker.io",
-      {
-        headers: {
-          "user-agent": session.defaultSession.getUserAgent(),
-        },
-      }
+      "https://matchmaker.krunker.io/game-list?hostname=krunker.io"
     );
 
     const json = (await res.json()) as {
@@ -155,12 +151,11 @@ export async function searchMatch(defaultRegion: string) {
     if (!matches.length) {
       console.log("searchMatchStatus", "No Matches Found");
       if (config.get("tools_autoSearch")) continue;
-      else return;
+      else return ipcRenderer.send("search-match-failure");
     }
 
     const randomMatch = matches[~~(Math.random() * matches.length)];
-
     console.log("searchMatchStatus", "Match Found", randomMatch);
-    return "https://krunker.io/?game=" + randomMatch.id;
+    location.href = "https://krunker.io/?game=" + randomMatch.id;
   }
 }

@@ -1,4 +1,3 @@
-import { ipcRenderer } from "electron";
 import Button from "krunker-ui/components/Button";
 import Select from "krunker-ui/components/Select";
 import { Set } from "krunker-ui/components/Set";
@@ -6,7 +5,7 @@ import Slider from "krunker-ui/components/Slider";
 import Switch from "krunker-ui/components/Switch";
 import Text from "krunker-ui/components/Text";
 import config from "../config.js";
-import { gameModes, gameRegions } from "../matchmaker.js";
+import { gameModes, gameRegions, searchMatch } from "../matchmaker.js";
 
 export default function MatchmakingSection() {
   return (
@@ -76,11 +75,7 @@ export default function MatchmakingSection() {
           config.set("tools_minPlayersSlider", e.currentTarget.valueAsNumber)
         }
       />
-      <Button
-        text="🔎"
-        title="Search"
-        onClick={() => ipcRenderer.send("search-match")}
-      />
+      <Button text="🔎" title="Search" onClick={() => searchMatch()} />
     </Set>
   );
 }
