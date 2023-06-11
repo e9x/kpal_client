@@ -4,6 +4,28 @@
 
 Electron desktop client for Krunker.IO
 
+## Usage
+
+This repository only contains the source code for KPal Client. In order to use it, you must build it from source.
+
+### Building
+
+Programs required:
+
+- [NodeJS](https://nodejs.org/en)
+
+1. [Download the source code ZIP](https://github.com/e9x/kpal_client/archive/refs/heads/master.zip)
+2. Extract kpal_client-master to a folder
+3. Open kpal_client-master in a terminal
+4. Run the following commands:
+   ```sh
+   npm install
+   npm run build
+   npm run dist
+   ```
+5. Once the commands are finished executing, navigate to kpal_client-master/dist/
+6. You should see the .exe installer for KPal Client.
+
 ## Keybinds
 
 - <kbd>F3</kbd> Quick search using matchmaker
